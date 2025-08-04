@@ -17,7 +17,7 @@ MISTAKES_FILE = "mistakes.txt"
 # --- GLOBALLER ---
 word_list = []       # tüm kelimeler (eng, tur, example)
 stats = {}           # sm-2, tekrar, quality bilgisi
-mode = None          # seçilen mod: "rutin", "hatta", "hardcore"
+mode = None          # seçilen mod: "rutin", "hatalar", "hardcore"
 session_words = []   # seçilen moddaki session listesi
 current_index = 0    # o anki sorulan kelime indeksi
 start_time = 0       # cevap süresi için
@@ -89,7 +89,6 @@ def clear_mistakes_for_word(word):
         return
     with open(MISTAKES_FILE, encoding="utf-8") as mf:
         content = mf.read()
-    # Soru: kelime ... bloklarını sil
     import re
     pattern = re.compile(rf"(Soru: {re.escape(word)}\n(?:-.*\n)*\n)", re.MULTILINE)
     content_new = pattern.sub("", content)
@@ -100,43 +99,40 @@ def clear_mistakes_for_word(word):
 def create_session():
     global session_words
     if mode == "rutin":
-        # Günlük rutin mod: tüm kelimeler içinden SM-2 ye göre tekrar zamanı gelenler
         session_words = []
         now = time.time()
         for i, w in enumerate(word_list):
             key = w[0]  # İngilizce kelime
             if key not in stats:
-                # Yeni kelime ekle (başlangıç değerleri)
                 stats[key] = {"interval": 0, "repetitions": 0, "ef": 2.5, "due": 0, "correct_streak": 0}
             if stats[key]["due"] <= now:
                 session_words.append(w)
         if not session_words:
             messagebox.showinfo("Bilgi", "Bugün tekrar edilmesi gereken kelime yok!")
-            exit()
-        # Maks 50 kelime sınırı
+            root.quit()
+            return
         if len(session_words) > 50:
             session_words = random.sample(session_words, 50)
 
     elif mode == "hatalar":
-        # Hata oranı %20 ve üzeri olan kelimeler: Mistakes.txt baz alınabilir.
         mistake_words = load_mistakes_words()
         session_words = [w for w in word_list if w[0] in mistake_words]
         if not session_words:
             messagebox.showinfo("Bilgi", "Hata oranı yüksek kelime yok!")
-            exit()
+            root.quit()
+            return
 
     elif mode == "hardcore":
-        # Tüm kelimeler + silinenler dahil rastgele
         session_words = word_list.copy()
         if not session_words:
             messagebox.showinfo("Bilgi", "Kelime listesi boş!")
-            exit()
+            root.quit()
+            return
 
     random.shuffle(session_words)
 
 # --- Spaced Repetition SM-2 ALGORİTMASI ---
 def sm2_update(word, quality):
-    """quality: 0-5 arası, 5 en iyi"""
     key = word[0]
     if key not in stats:
         stats[key] = {"interval": 0, "repetitions": 0, "ef": 2.5, "due": 0, "correct_streak": 0}
@@ -152,7 +148,10 @@ def sm2_update(word, quality):
         data["repetitions"] += 1
         data["ef"] = max(1.3, data["ef"] + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)))
         data["due"] = time.time() + data["interval"] * 24 * 3600
-        # Eğer 10 kere arka arkaya doğruysa kelimeyi listeden kaldırabiliriz (hardcore dışında)
+        if quality >= 3:
+            data["correct_streak"] = data.get("correct_streak", 0) + 1
+        else:
+            data["correct_streak"] = 0
         if data["correct_streak"] >= 10 and mode != "hardcore":
             if word in session_words:
                 session_words.remove(word)
@@ -165,6 +164,7 @@ def sm2_update(word, quality):
 # --- TKINTER ARAYÜZÜ ---
 root = tk.Tk()
 root.title("İngilizce Kelime Öğrenme")
+root.withdraw()  # Başta gizle
 
 # Mod seçimi için pencere
 def select_mode():
@@ -175,6 +175,7 @@ def select_mode():
         return
     mode = m
     mode_window.destroy()
+    root.deiconify()  # Ana pencereyi göster
     create_session()
     show_question()
 
@@ -221,7 +222,6 @@ def show_question():
 
     # İngilizce soru ise örnek göster, Türkçe soru ise boş bırak
     if random.choice([True, False]):
-        # İngilizce soru, cevap Türkçe
         question_label.config(text=eng)
         example_label.config(text=example)
         root.current_answer = tur.lower()
@@ -229,13 +229,12 @@ def show_question():
         root.is_eng_question = True
         pronounce(eng)
     else:
-        # Türkçe soru, cevap İngilizce
         question_label.config(text=tur)
         example_label.config(text="")
         root.current_answer = eng.lower()
         root.question_word = tur
         root.is_eng_question = False
-        pronounce(eng)  # Yine ingilizce kelimeyi seslendiriyoruz
+        pronounce(eng)
 
     answer_entry.delete(0, tk.END)
     feedback_label.config(text="")
@@ -247,7 +246,7 @@ def check_answer(event=None):
     correct_answer = root.current_answer
 
     time_taken = time.time() - start_time
-    # Quality puanını 5 üzerinden cevap süresine göre hesaplayalım (örnek):
+
     if time_taken < 3:
         quality = 5
     elif time_taken < 7:
@@ -258,12 +257,11 @@ def check_answer(event=None):
         quality = 2
 
     question_word = root.question_word
-    # Doğru mu?
+
     if user_answer == correct_answer:
         feedback_label.config(text="Doğru!", fg="green")
         score += 1
 
-        # SM-2 güncelle
         sm2_update(session_words[current_index], quality)
         clear_mistakes_for_word(question_word)
         score_label.config(text=f"Skor: {score}")
@@ -273,16 +271,19 @@ def check_answer(event=None):
     else:
         feedback_label.config(text=f"Yanlış! Doğru cevap: {correct_answer}", fg="red")
         add_to_mistakes(question_word, user_answer, correct_answer)
-        # SM-2 güncelle: kalitesi düşük
         sm2_update(session_words[current_index], 1)
 
         current_index += 1
         root.after(1500, show_question)
 
-# Enter ile cevap kontrolü
 root.bind("<Return>", check_answer)
 
+# --- PROGRAM BAŞLANGICI ---
+try:
+    load_words()
+    load_stats()
+except RuntimeError as e:
+    messagebox.showerror("Hata", str(e))
+    exit()
+
 root.mainloop()
-
-
-
