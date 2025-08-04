@@ -40,6 +40,4 @@ btn_translate.pack(pady=10)
 
 root.mainloop()
 
-# Programın sonunda şunu ekle
-input("Program bitti, çıkmak için Enter'a basınız...")
 

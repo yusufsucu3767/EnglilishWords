@@ -284,6 +284,5 @@ root.bind("<Return>", check_answer)
 
 root.mainloop()
 
-# Programın sonunda şunu ekle
-input("Program bitti, çıkmak için Enter'a basınız...")
+
 
