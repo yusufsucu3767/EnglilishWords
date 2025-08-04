@@ -1,0 +1,26 @@
+{
+  "apple||elma": {
+    "repetition": 4,
+    "interval": 38,
+    "efactor": 2.36,
+    "last_seen": "2025-08-04"
+  },
+  "book||kitap": {
+    "repetition": 3,
+    "interval": 14,
+    "efactor": 2.36,
+    "last_seen": "2025-08-04"
+  },
+  "water||su": {
+    "repetition": 3,
+    "interval": 16,
+    "efactor": 2.7,
+    "last_seen": "2025-08-04"
+  },
+  "hello||merhaba": {
+    "repetition": 3,
+    "interval": 16,
+    "efactor": 2.6,
+    "last_seen": "2025-08-04"
+  }
+}
