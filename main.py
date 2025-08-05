@@ -5,9 +5,11 @@ import random
 import time
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import simpledialog
 from gtts import gTTS
 from io import BytesIO
 import pygame
+from deep_translator import GoogleTranslator
 
 # --- DOSYA YOLLARI ---
 WORDS_FILE = "words.csv"
@@ -15,12 +17,13 @@ STATS_FILE = "stats.json"
 MISTAKES_FILE = "mistakes.txt"
 
 # --- GLOBALLER ---
-word_list = []       # tüm kelimeler (eng, tur, example)
-stats = {}           # sm-2, tekrar, quality bilgisi
-mode = None          # seçilen mod: "rutin", "hatalar", "hardcore"
-session_words = []   # seçilen moddaki session listesi
-current_index = 0    # o anki sorulan kelime indeksi
-start_time = 0       # cevap süresi için
+word_list = []       # (eng, tur, example)
+stats = {}
+mode = None
+session_words = []
+current_index = 0
+start_time = 0
+score = 0
 
 pygame.mixer.init()
 
@@ -40,14 +43,15 @@ def pronounce(text):
 def load_words():
     global word_list
     if not os.path.exists(WORDS_FILE):
-        raise RuntimeError(f"{WORDS_FILE} bulunamadı!")
-
+        # Boş dosya oluştur
+        with open(WORDS_FILE, "w", encoding="utf-8", newline="") as f:
+            pass
     with open(WORDS_FILE, newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
-        word_list = [row for row in reader if len(row) >= 3]
-
-    if not word_list:
-        raise RuntimeError(f"{WORDS_FILE} dosyası boş veya format hatası!")
+        word_list.clear()
+        for row in reader:
+            if len(row) >= 3:
+                word_list.append((row[0], row[1], row[2]))
 
 def load_stats():
     global stats
@@ -64,7 +68,7 @@ def save_stats():
     with open(STATS_FILE, "w", encoding="utf-8") as sf:
         json.dump(stats, sf, indent=2, ensure_ascii=False)
 
-# --- MISTAKES.DOSYASI İŞLEMLERİ ---
+# --- MISTAKES ---
 def add_to_mistakes(question, your_answer, correct_answer):
     with open(MISTAKES_FILE, "a", encoding="utf-8") as mf:
         mf.write(f"Soru: {question}\n")
@@ -72,7 +76,6 @@ def add_to_mistakes(question, your_answer, correct_answer):
         mf.write(f"- Doğru cevap: {correct_answer}\n\n")
 
 def load_mistakes_words():
-    """mistakes.txt içinden kelimeleri alır (soru sütunu)"""
     if not os.path.exists(MISTAKES_FILE):
         return []
     with open(MISTAKES_FILE, encoding="utf-8") as mf:
@@ -84,33 +87,31 @@ def load_mistakes_words():
     return words
 
 def clear_mistakes_for_word(word):
-    """Bir kelime mistakes.txt den silinir (hatalar temizlenir)"""
     if not os.path.exists(MISTAKES_FILE):
         return
+    import re
     with open(MISTAKES_FILE, encoding="utf-8") as mf:
         content = mf.read()
-    import re
     pattern = re.compile(rf"(Soru: {re.escape(word)}\n(?:-.*\n)*\n)", re.MULTILINE)
     content_new = pattern.sub("", content)
     with open(MISTAKES_FILE, "w", encoding="utf-8") as mf:
         mf.write(content_new)
 
-# --- SEÇİLEN MODA GÖRE SESSION OLUŞTURMA ---
+# --- SESSION OLUŞTURMA ---
 def create_session():
     global session_words
     if mode == "rutin":
         session_words = []
         now = time.time()
-        for i, w in enumerate(word_list):
-            key = w[0]  # İngilizce kelime
+        for w in word_list:
+            key = w[0]
             if key not in stats:
                 stats[key] = {"interval": 0, "repetitions": 0, "ef": 2.5, "due": 0, "correct_streak": 0}
             if stats[key]["due"] <= now:
                 session_words.append(w)
         if not session_words:
             messagebox.showinfo("Bilgi", "Bugün tekrar edilmesi gereken kelime yok!")
-            root.quit()
-            return
+            return False
         if len(session_words) > 50:
             session_words = random.sample(session_words, 50)
 
@@ -119,24 +120,22 @@ def create_session():
         session_words = [w for w in word_list if w[0] in mistake_words]
         if not session_words:
             messagebox.showinfo("Bilgi", "Hata oranı yüksek kelime yok!")
-            root.quit()
-            return
+            return False
 
     elif mode == "hardcore":
         session_words = word_list.copy()
         if not session_words:
             messagebox.showinfo("Bilgi", "Kelime listesi boş!")
-            root.quit()
-            return
+            return False
 
     random.shuffle(session_words)
+    return True
 
-# --- Spaced Repetition SM-2 ALGORİTMASI ---
+# --- SM-2 ALGORİTMASI ---
 def sm2_update(word, quality):
     key = word[0]
     if key not in stats:
         stats[key] = {"interval": 0, "repetitions": 0, "ef": 2.5, "due": 0, "correct_streak": 0}
-
     data = stats[key]
     if quality >= 3:
         if data["repetitions"] == 0:
@@ -148,10 +147,8 @@ def sm2_update(word, quality):
         data["repetitions"] += 1
         data["ef"] = max(1.3, data["ef"] + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)))
         data["due"] = time.time() + data["interval"] * 24 * 3600
-        if quality >= 3:
-            data["correct_streak"] = data.get("correct_streak", 0) + 1
-        else:
-            data["correct_streak"] = 0
+        data["correct_streak"] += 1
+        # 10 kere üst üste doğruysa hardcore hariç listeden çıkar
         if data["correct_streak"] >= 10 and mode != "hardcore":
             if word in session_words:
                 session_words.remove(word)
@@ -161,66 +158,69 @@ def sm2_update(word, quality):
         data["due"] = time.time() + 24 * 3600
         data["correct_streak"] = 0
 
-# --- TKINTER ARAYÜZÜ ---
+# --- ANA PENCERE ---
 root = tk.Tk()
 root.title("İngilizce Kelime Öğrenme")
-root.withdraw()  # Başta gizle
+root.geometry("500x350")
 
-# Mod seçimi için pencere
-def select_mode():
-    global mode
-    m = mode_var.get()
-    if m not in ("rutin", "hatalar", "hardcore"):
-        messagebox.showerror("Hata", "Lütfen bir mod seçin!")
+# --- Ana Menü ---
+def start_mode(selected_mode):
+    global mode, current_index, score
+    mode = selected_mode
+    current_index = 0
+    score = 0
+    if not create_session():
         return
-    mode = m
-    mode_window.destroy()
-    root.deiconify()  # Ana pencereyi göster
-    create_session()
+    main_menu_frame.pack_forget()
+    session_frame.pack(fill="both", expand=True)
     show_question()
 
-mode_window = tk.Toplevel(root)
-mode_window.title("Mod Seçimi")
-mode_var = tk.StringVar()
+# --- Ana Menü Frame ---
+main_menu_frame = tk.Frame(root)
+main_menu_frame.pack(fill="both", expand=True)
 
-tk.Label(mode_window, text="Lütfen çalışma modunu seçin:", font=("Arial", 14)).pack(pady=10)
-tk.Radiobutton(mode_window, text="Günlük Rutin Modu", variable=mode_var, value="rutin").pack(anchor="w", padx=20)
-tk.Radiobutton(mode_window, text="Hatalar Modu (Yanlışları Çalış)", variable=mode_var, value="hatalar").pack(anchor="w", padx=20)
-tk.Radiobutton(mode_window, text="Hardcore Mod (Tüm Kelimeler)", variable=mode_var, value="hardcore").pack(anchor="w", padx=20)
-tk.Button(mode_window, text="Başla", command=select_mode).pack(pady=15)
+tk.Label(main_menu_frame, text="Kelime Öğrenme Uygulaması", font=("Arial", 18)).pack(pady=15)
 
-# Ana pencere bileşenleri
-question_label = tk.Label(root, text="", font=("Arial", 20))
+tk.Button(main_menu_frame, text="Günlük Rutin Modu", font=("Arial", 14),
+          command=lambda: start_mode("rutin")).pack(pady=5, fill="x", padx=100)
+tk.Button(main_menu_frame, text="Hatalar Modu", font=("Arial", 14),
+          command=lambda: start_mode("hatalar")).pack(pady=5, fill="x", padx=100)
+tk.Button(main_menu_frame, text="Hardcore Mod", font=("Arial", 14),
+          command=lambda: start_mode("hardcore")).pack(pady=5, fill="x", padx=100)
+tk.Button(main_menu_frame, text="Kelime Ekle", font=("Arial", 14),
+          command=lambda: show_add_word_window()).pack(pady=20, fill="x", padx=100)
+
+# --- Çalışma Frame ---
+session_frame = tk.Frame(root)
+
+question_label = tk.Label(session_frame, text="", font=("Arial", 20))
 question_label.pack(pady=15)
 
-example_label = tk.Label(root, text="", font=("Arial", 14), fg="gray")
+example_label = tk.Label(session_frame, text="", font=("Arial", 14), fg="gray")
 example_label.pack(pady=5)
 
-answer_entry = tk.Entry(root, font=("Arial", 16))
+answer_entry = tk.Entry(session_frame, font=("Arial", 16))
 answer_entry.pack(pady=15)
 answer_entry.focus_set()
 
-feedback_label = tk.Label(root, text="", font=("Arial", 16))
+feedback_label = tk.Label(session_frame, text="", font=("Arial", 16))
 feedback_label.pack(pady=10)
 
-score_label = tk.Label(root, text="Skor: 0", font=("Arial", 16))
+score_label = tk.Label(session_frame, text="Skor: 0", font=("Arial", 16))
 score_label.pack(pady=5)
 
-# Oyun değişkenleri
-score = 0
-current_index = 0
-start_time = 0
+back_to_menu_btn = tk.Button(session_frame, text="Ana Menüye Dön", command=lambda: back_to_menu())
+back_to_menu_btn.pack(pady=10)
 
 def show_question():
     global current_index, start_time
     if current_index >= len(session_words):
         messagebox.showinfo("Tebrikler!", f"Seans bitti! Toplam skor: {score}")
         save_stats()
-        root.quit()
+        back_to_menu()
         return
     eng, tur, example = session_words[current_index]
 
-    # İngilizce soru ise örnek göster, Türkçe soru ise boş bırak
     if random.choice([True, False]):
         question_label.config(text=eng)
         example_label.config(text=example)
@@ -244,7 +244,6 @@ def check_answer(event=None):
     global current_index, score
     user_answer = answer_entry.get().strip().lower()
     correct_answer = root.current_answer
-
     time_taken = time.time() - start_time
 
     if time_taken < 3:
@@ -261,29 +260,75 @@ def check_answer(event=None):
     if user_answer == correct_answer:
         feedback_label.config(text="Doğru!", fg="green")
         score += 1
-
         sm2_update(session_words[current_index], quality)
         clear_mistakes_for_word(question_word)
         score_label.config(text=f"Skor: {score}")
-
         current_index += 1
         root.after(1000, show_question)
     else:
         feedback_label.config(text=f"Yanlış! Doğru cevap: {correct_answer}", fg="red")
         add_to_mistakes(question_word, user_answer, correct_answer)
         sm2_update(session_words[current_index], 1)
-
         current_index += 1
         root.after(1500, show_question)
 
 root.bind("<Return>", check_answer)
 
-# --- PROGRAM BAŞLANGICI ---
-try:
+def back_to_menu():
+    session_frame.pack_forget()
+    main_menu_frame.pack(fill="both", expand=True)
     load_words()
     load_stats()
-except RuntimeError as e:
-    messagebox.showerror("Hata", str(e))
-    exit()
 
+# --- KELİME EKLEME EKRANI ---
+def show_add_word_window():
+    add_window = tk.Toplevel(root)
+    add_window.title("Kelime Ekle")
+    add_window.geometry("400x250")
+
+    tk.Label(add_window, text="Türkçe Kelime Girin:", font=("Arial", 14)).pack(pady=10)
+    tur_entry = tk.Entry(add_window, font=("Arial", 14))
+    tur_entry.pack(pady=10)
+    tur_entry.focus_set()
+
+    output_label = tk.Label(add_window, text="", font=("Arial", 12), fg="blue")
+    output_label.pack(pady=5)
+
+    def add_word_action():
+        tur_word = tur_entry.get().strip()
+        if not tur_word:
+            messagebox.showerror("Hata", "Türkçe kelime boş olamaz!")
+            return
+        # İngilizce ve örnek cümleyi bul
+        try:
+            eng_word = GoogleTranslator(source="tr", target="en").translate(tur_word)
+            example_sentence = GoogleTranslator(source="en", target="en").translate(f"This is a {eng_word}.")
+        except Exception as e:
+            messagebox.showerror("Hata", f"Çeviri hatası: {e}")
+            return
+
+        # Kaydet
+        with open(WORDS_FILE, "a", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([eng_word, tur_word, example_sentence])
+
+        output_label.config(text=f"Kelime eklendi:\n{eng_word} - {tur_word}")
+        tur_entry.delete(0, tk.END)
+
+        # Listeyi yenile
+        load_words()
+        load_stats()
+
+    add_btn = tk.Button(add_window, text="Kelime Ekle", command=add_word_action)
+    add_btn.pack(pady=10)
+
+    def close_window():
+        add_window.destroy()
+
+    back_btn = tk.Button(add_window, text="Ana Menüye Dön", command=close_window)
+    back_btn.pack(pady=10)
+
+# --- PROGRAM BAŞLANGICI ---
+load_words()
+load_stats()
 root.mainloop()
