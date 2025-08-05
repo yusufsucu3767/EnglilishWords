@@ -3,24 +3,264 @@
     "repetition": 4,
     "interval": 38,
     "efactor": 2.36,
-    "last_seen": "2025-08-04"
+    "last_seen": "2025-08-04",
+    "daily_correct": 0,
+    "daily_wrong": 0,
+    "correct_streak": 0,
+    "repetitions": 0,
+    "ef": 2.5,
+    "due": 0
   },
   "book||kitap": {
     "repetition": 3,
     "interval": 14,
     "efactor": 2.36,
-    "last_seen": "2025-08-04"
+    "last_seen": "2025-08-04",
+    "daily_correct": 0,
+    "daily_wrong": 0,
+    "correct_streak": 0,
+    "repetitions": 0,
+    "ef": 2.5,
+    "due": 0
   },
   "water||su": {
     "repetition": 3,
     "interval": 16,
     "efactor": 2.7,
-    "last_seen": "2025-08-04"
+    "last_seen": "2025-08-04",
+    "daily_correct": 0,
+    "daily_wrong": 0,
+    "correct_streak": 0,
+    "repetitions": 0,
+    "ef": 2.5,
+    "due": 0
   },
   "hello||merhaba": {
     "repetition": 3,
     "interval": 16,
     "efactor": 2.6,
-    "last_seen": "2025-08-04"
+    "last_seen": "2025-08-04",
+    "daily_correct": 0,
+    "daily_wrong": 0,
+    "correct_streak": 0,
+    "repetitions": 0,
+    "ef": 2.5,
+    "due": 0
+  },
+  "apple": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.6,
+    "due": 1754488010.3111765,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "book": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.6,
+    "due": 1754487993.9300551,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "water": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754488014.2113829,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "hello": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754487945.2571032,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "thursday": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754488006.8592756,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "monday": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754487902.0818052,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "tuesday": {
+    "interval": 1,
+    "repetitions": 0,
+    "ef": 2.5,
+    "due": 1754487973.608581,
+    "correct_streak": 0,
+    "daily_correct": 0,
+    "daily_wrong": 1
+  },
+  "wednesday": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754487967.2806988,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "friday": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754488045.963577,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "saturday": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754488026.981738,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "sunday": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754487961.043094,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "january": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.36,
+    "due": 1754487935.6964352,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "february": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754487955.1747177,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "march": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.6,
+    "due": 1754487909.618301,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "april": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754488050.7684956,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "may": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754488019.2713692,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "june": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754487940.0897555,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "july": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.36,
+    "due": 1754487989.9788246,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "august": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754487914.263306,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "september": {
+    "interval": 1,
+    "repetitions": 0,
+    "ef": 2.5,
+    "due": 1754487927.7325087,
+    "correct_streak": 0,
+    "daily_correct": 0,
+    "daily_wrong": 1
+  },
+  "october": {
+    "interval": 1,
+    "repetitions": 0,
+    "ef": 2.5,
+    "due": 1754488041.439247,
+    "correct_streak": 0,
+    "daily_correct": 0,
+    "daily_wrong": 1
+  },
+  "november": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754487980.7845032,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "december": {
+    "interval": 1,
+    "repetitions": 1,
+    "ef": 2.5,
+    "due": 1754488001.8114994,
+    "correct_streak": 1,
+    "daily_correct": 1,
+    "daily_wrong": 0
+  },
+  "door": {
+    "interval": 6,
+    "repetitions": 2,
+    "ef": 2.6,
+    "due": 1754919949.9713774,
+    "correct_streak": 2,
+    "daily_correct": 2,
+    "daily_wrong": 0
   }
 }

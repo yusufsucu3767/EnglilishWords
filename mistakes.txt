@@ -1,0 +1,8 @@
+Soru: september
+- Senin cevabın: july
+- Doğru: september
+
+Soru: tuesday
+- Senin cevabın: tausday
+- Doğru: tuesday
+
